@@ -14,6 +14,7 @@ function ParseFile {
     return $strategy
 }
 
+$shapes = "A", "B", "C"
 $scoremap = @{
     "A" = 1;  # Rock
     "B" = 2;  # Paper
@@ -21,6 +22,38 @@ $scoremap = @{
     "X" = 1;  # Rock
     "Y" = 2;  # Paper
     "Z" = 3;  # Scissors
+}
+
+function score {
+    param(
+        $they,
+        $you
+    )
+
+    $you, $they = $scoremap[$you], $scoremap[$they]
+    $score = $you
+
+    if ($you -eq $they) {
+        $score += 3  # Tie
+    } elseif ($you -eq 1 -and $they -eq 3) {
+        $score += 6  # Rock beats Scissors
+    } elseif ($you -gt $they -and !($you -eq 3 -and $they -eq 1)) {
+        $score += 6  # Win
+    } else {
+        $score += 0  # Loss
+    }
+
+    return $score
+}
+
+function one-over {
+    param($shape)
+    return $shapes[($shapes.IndexOf($shape) + 1) % $shapes.Length]
+}
+
+function one-below {
+    param($shape)
+    return $shapes[($shapes.IndexOf($shape) - 1) % $shapes.Length]
 }
 
 function Part1 {
@@ -33,26 +66,43 @@ function Part1 {
     foreach ($round in $strategy) {
         $them, $me = $round
         # Write-Host "Round:" $them vs $me
-        $me, $them = $scoremap[$me], $scoremap[$them]
-        $score = $me
-
-        if ($me -eq $them) {
-            $score += 3  # Tie
-        } elseif ($me -eq 1 -and $them -eq 3) {
-            $score += 6  # Rock beats Scissors
-        } elseif ($me -gt $them -and !($me -eq 3 -and $them -eq 1)) {
-            $score += 6  # Win
-        } else {
-            $score += 0  # Loss
-        }
-
-        $total += $score
+        $total += score $them $me
     }
 
     Write-Host Total: $total
 }
 
 function Part2 {
+    param (
+        $strategy
+    )
+    
+    $total = 0
+
+    foreach ($round in $strategy) {
+        $them, $outcome = $round
+
+        # Write-Host "They have: ${them}"
+        if ($outcome -eq "Y") {
+            # Draw
+            $me = $them
+            # Write-Host "Should draw, I pick ${me}"
+        } elseif ($outcome -eq "X") {
+            # Lose
+            $me = one-below $them
+            # Write-Host "Should lose, I pick ${me}"
+        } elseif ($outcome -eq "Z") {
+            # Win
+            $me = one-over $them
+            # Write-Host "Should win, I pick ${me}"
+        } else {
+            Write-Host "Unexpected strategy ${outcome}"
+        }
+
+        $total += score $them $me
+    }
+
+    Write-Host "Total: ${total}"
 }
 
 function Run {
@@ -69,10 +119,10 @@ function Run {
     Write-Host "Part 1:"
     Part1 $data
 
-    # Write-Host "Part 2 test:"
-    # Part2 $test
-    # Write-Host "Part 2:"
-    # Part2 $data
+    Write-Host "Part 2 test:"
+    Part2 $test
+    Write-Host "Part 2:"
+    Part2 $data
 }
 
 if ($args[0]) {
